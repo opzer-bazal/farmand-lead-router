@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Intake Form</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h1>Get Started</h1>
+    <p class="subtitle">Tell us a bit about your needs and we'll route you to the right specialist.</p>
+
+    <form id="lead-form">
+      <div class="field">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" name="fullName" required />
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input type="text" id="phone" name="phone" />
+      </div>
+
+      <div class="field">
+        <label for="clientType">Client Type</label>
+        <select id="clientType" name="clientType">
+          <option value="Individual">Individual</option>
+          <option value="Business">Business</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="industry">Industry</label>
+        <select id="industry" name="industry" required>
+          <option value="" disabled selected>Select an industry</option>
+          <option value="Medical / Physicians (incl. ER)">Medical / Physicians (incl. ER)</option>
+          <option value="Restaurants">Restaurants</option>
+          <option value="Bars">Bars</option>
+          <option value="Professional Services">Professional Services</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="serviceNeeded">Service Needed</label>
+        <textarea id="serviceNeeded" name="serviceNeeded"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="feeBand">Expected Fee Band</label>
+        <select id="feeBand" name="feeBand">
+          <option value="Under $1,000">Under $1,000</option>
+          <option value="$1,000–$1,500">$1,000–$1,500</option>
+          <option value="$1,500–$3,000">$1,500–$3,000</option>
+          <option value="$3,000+">$3,000+</option>
+        </select>
+      </div>
+
+      <p class="error-message" id="error-message">Something went wrong submitting the form. Please try again.</p>
+
+      <button type="submit" id="submit-btn">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mode') === 'embed') {
+        document.body.classList.add('embed-mode');
+      }
+    })();
+
+    function getRedirectUrl(industry) {
+      if (industry === 'Restaurants') {
+        return 'https://farmandcpa.com/brandon';
+      }
+      if (industry === 'Medical / Physicians (incl. ER)') {
+        return 'https://farmandcpa.com/medical';
+      }
+      return 'https://farmandcpa.com';
+    }
+
+    const form = document.getElementById('lead-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      errorMessage.classList.remove('visible');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch('/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error('Submission failed');
+        }
+
+        const redirectUrl = getRedirectUrl(payload.industry);
+
+        try {
+          window.parent.postMessage({ redirect: redirectUrl }, '*');
+          window.top.location.href = redirectUrl;
+        } catch (err) {
+          window.open(redirectUrl, '_blank');
+        }
+      } catch (err) {
+        errorMessage.classList.add('visible');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+      }
+    });
+  </script>
+</body>
+</html>
